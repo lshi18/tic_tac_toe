@@ -20,7 +20,7 @@ at Impraise.
 
 ## The challenge: tic-tac-toe game
 
-The challenge, if you decide to accept it, is to create a tic-tac-toe game server.
+The challenge, if you decide to accept it, is to create a [tic-tac-toe](https://en.wikipedia.org/wiki/Tic-tac-toe) game server.
 
 ### The rules
 
