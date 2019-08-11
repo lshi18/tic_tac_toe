@@ -18,6 +18,35 @@ at Impraise.
 - your domain modelling
 - your choice of technologies
 
-_Bonus points if you're running the project with Docker Compose_
+## The challenge: tic-tac-toe game
 
-## The challenge: TBD
+The challenge, if you decide to accept it, is to create a tic-tac-toe game server.
+
+### The rules
+
+- your project should be well tested because you're not a monster
+- your Git history should be meaningful
+- if your project involves a few different technologies, a `docker-compose`
+  setup will be appreciated
+
+**Good luck!** not that you need any :)
+
+### Tips
+
+- less is more
+- domain modelling is important
+- SOLID
+- choose the right tool for the right job.
+
+---
+
+### Specs
+
+_The spec is voluntarily lightweight, as we want to see how you are
+approaching the task and what solution(s) you can come up with._
+
+- the server needs to be able to handle multiple concurrent games
+- if a game crashes, we should be able to recover to a good state automatically
+- we should be able to play by launching your project with `iex -S mix`
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Tic_tac_toe.svg/1200px-Tic_tac_toe.svg.png)
