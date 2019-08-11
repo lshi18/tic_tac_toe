@@ -14,7 +14,7 @@ at Impraise.
 - if the project works & respects the spec
 - your approach to the problem
 - your tests
-- your use of OTP
+- your use of OTP (if you decide to use it)
 - your domain modelling
 - your choice of technologies
 
