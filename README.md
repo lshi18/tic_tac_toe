@@ -42,7 +42,7 @@ The challenge, if you decide to accept it, is to create a [tic-tac-toe](https://
 
 ### Specs
 
-_The spec is voluntarily lightweight, as we want to see how you are
+_The spec is deliberately lightweight, as we want to see how you are
 approaching the task and what solution(s) you can come up with._
 
 - the server needs to be able to handle multiple concurrent games
