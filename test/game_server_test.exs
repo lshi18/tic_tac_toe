@@ -1,5 +1,5 @@
 defmodule TicTacToeGameServerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   alias TicTacToe.GameServer, as: GS
   alias TicTacToe.GameState, as: State
 

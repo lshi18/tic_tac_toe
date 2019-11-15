@@ -1,9 +1,8 @@
 defmodule TicTacToeRouterTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
 
   alias TicTacToe.Router, as: R
   alias TicTacToeRouterTest.TestGameServer
-
 
   test "Start a new worker via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
