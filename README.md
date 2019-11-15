@@ -1,3 +1,21 @@
+# Elixir challenge solution
+
+## Documentation
+
+For how to use the API to play the game in elixir shell, please see documentation in
+module TicTacToe.
+
+For the explanation of the mechanism of handling concurrency and fault-tolerency, please
+see documentation in module TicTacToe.Router.
+
+## Test
+
+To run the tests, please used
+
+```
+mix test --no-start
+```
+
 # Elixir challenge
 
 This repository holds the spec of the recruiting challenge for Elixir developers
