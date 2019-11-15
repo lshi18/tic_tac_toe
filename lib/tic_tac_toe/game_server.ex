@@ -78,6 +78,9 @@ defmodule TicTacToe.GameServer do
     {:reply, session, state}
   end
 
+  def handle_call(:reset, _from, %{session: %GameSession{game_state: :playing} = session} = state) do
+    {:reply, session, state}
+  end
   def handle_call(:reset, _from, %{game_id: game_id} = state) do
     new_session = %GameSession{}
     SessionStore.update_session(game_id, new_session)

@@ -113,7 +113,7 @@ defmodule TicTacToeGameServerTest do
     GS.stop(pid)
   end
 
-  test "test reset game" do
+  test "test reset game." do
     {:ok, pid} = GS.start_link([])
 
     moves = [{:c, 1}, {:n, 8},
@@ -133,6 +133,24 @@ defmodule TicTacToeGameServerTest do
     assert %Session{player: :crosses,
                     game_state: :playing,
                     board: {[], []}} == final_state
+
+    GS.stop(pid)
+  end
+
+  test "test trying to reset an unfinished game, reset will not take effect." do
+    {:ok, pid} = GS.start_link([])
+    moves = [{:c, 1}, {:n, 8},
+             {:c, 2}, {:n, 3},
+             {:c, 7}]
+
+    state =
+    for {_player, move} <- moves do
+      GS.move(pid, move)
+    end |> List.last
+
+    state1 = GS.reset(pid)
+    assert state == state1
+
     GS.stop(pid)
   end
 end
