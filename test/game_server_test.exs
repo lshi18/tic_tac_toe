@@ -1,7 +1,7 @@
 defmodule TicTacToeGameServerTest do
   use ExUnit.Case
   alias TicTacToe.GameServer, as: GS
-  alias TicTacToe.GameState, as: State
+  alias TicTacToe.GameSession, as: Session
 
   test "start a new game" do
     {:ok, pid} = GS.start_link([])
@@ -17,35 +17,35 @@ defmodule TicTacToeGameServerTest do
   test "play a valid move for each player" do
     {:ok, pid} = GS.start_link([])
     state = GS.move(pid, 3)
-    assert %State{player: :noughts,
-                  game_state: :playing,
-                  board: {[3], []}} == state
+    assert %Session{player: :noughts,
+                    game_state: :playing,
+                    board: {[3], []}} == state
 
-    assert %State{player: :crosses,
-                  game_state: :playing,
-                  board: {[3], [5]}} == GS.move(pid, 5)
+    assert %Session{player: :crosses,
+                    game_state: :playing,
+                    board: {[3], [5]}} == GS.move(pid, 5)
     GS.stop(pid)
   end
 
   test "play invalid moves" do
     {:ok, pid} = GS.start_link([])
     state = GS.move(pid, 11)
-    assert %State{player: :crosses,
-                  game_state: :playing,
-                  board: {[], []}} == state
+    assert %Session{player: :crosses,
+                    game_state: :playing,
+                    board: {[], []}} == state
 
     ## can't play to the occupied square
     GS.move(pid, 3)
     state = GS.move(pid, 3)
-    assert %State{player: :noughts,
-                  game_state: :playing,
-                  board: {[3], []}} == state
+    assert %Session{player: :noughts,
+                    game_state: :playing,
+                    board: {[3], []}} == state
 
     GS.move(pid, 5)
     state = GS.move(pid, 5)
-    assert %State{player: :crosses,
-                  game_state: :playing,
-                  board: {[3], [5]}} == state
+    assert %Session{player: :crosses,
+                    game_state: :playing,
+                    board: {[3], [5]}} == state
 
     GS.stop(pid)
   end
@@ -65,9 +65,9 @@ defmodule TicTacToeGameServerTest do
     end
     |> List.last
 
-    assert %State{player: :crosses,
-                  game_state: {:win, [{1, 4, 7}]},
-                  board: {[4, 7, 8, 6, 1], [9, 3, 2, 5]}} == final_state
+    assert %Session{player: :crosses,
+                    game_state: {:win, [{1, 4, 7}]},
+                    board: {[4, 7, 8, 6, 1], [9, 3, 2, 5]}} == final_state
     GS.stop(pid)
   end
 
@@ -84,11 +84,10 @@ defmodule TicTacToeGameServerTest do
       GS.move(pid, move)
     end
     |> List.last
-    |> IO.inspect
 
-    assert %State{player: :noughts,
-                  game_state: {:win, [{4, 5, 6}]},
-                  board: {[9, 3, 7, 1], [6, 8, 5, 4]}} == final_state
+    assert %Session{player: :noughts,
+                    game_state: {:win, [{4, 5, 6}]},
+                    board: {[9, 3, 7, 1], [6, 8, 5, 4]}} == final_state
 
     GS.stop(pid)
   end
@@ -107,11 +106,10 @@ defmodule TicTacToeGameServerTest do
       GS.move(pid, move)
     end
     |> List.last
-    |> IO.inspect
 
-    assert %State{player: :crosses,
-                  game_state: :draw,
-                  board: {[6, 5, 7, 2, 1], [9, 4, 3, 8]}} == final_state
+    assert %Session{player: :crosses,
+                    game_state: :draw,
+                    board: {[6, 5, 7, 2, 1], [9, 4, 3, 8]}} == final_state
     GS.stop(pid)
   end
 
@@ -131,10 +129,10 @@ defmodule TicTacToeGameServerTest do
 
     assert final_state.game_state == :draw
 
-    final_state = GS.reset(pid) |> IO.inspect
-    assert %State{player: :crosses,
-                  game_state: :playing,
-                  board: {[], []}} == final_state
+    final_state = GS.reset(pid)
+    assert %Session{player: :crosses,
+                    game_state: :playing,
+                    board: {[], []}} == final_state
     GS.stop(pid)
   end
 end

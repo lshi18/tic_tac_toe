@@ -1,4 +1,4 @@
-defmodule TicTacToe.GameState do
+defmodule TicTacToe.GameSession do
   defstruct [player: :crosses,
              board: {[], []},
              game_state: :playing]
@@ -8,7 +8,8 @@ defmodule TicTacToe.GameServer do
   use GenServer
   require Logger
 
-  alias TicTacToe.GameState
+  alias TicTacToe.GameSession
+  alias TicTacToe.SessionStore
 
   def start_link(init_args) do
     GenServer.start_link(__MODULE__, init_args)
@@ -22,50 +23,70 @@ defmodule TicTacToe.GameServer do
     GenServer.call(game_server, {:move, n})
   end
 
-  def stop(game_server), do: GenServer.stop(game_server)
+  def stop(game_server) do
+    GenServer.stop(game_server)
+  end
 
   def reset(game_server), do: GenServer.call(game_server, :reset)
 
   @impl true
-  def init(_init_args) do
-    {:ok, %GameState{}}
+  def init(init_args) do
+    game_id = Keyword.get(init_args, :game_id)
+    session =
+      case SessionStore.get_session(game_id) do
+        :no_session ->
+          SessionStore.init_session(game_id, %GameSession{})
+          %GameSession{}
+        stored ->
+          stored
+      end
+
+    {:ok, %{game_id: game_id,
+            session: session}}
   end
 
   @impl true
-  def handle_call(:get_game_state, _from, state) do
-    {:reply, state, state}
+  def handle_call(:get_game_state, _from, %{session: session} = state) do
+    {:reply, session, state}
   end
 
-  def handle_call({:move, n}, _from, %{game_state: :playing} = state) do
-    %{board: board,
-      player: player} = state
+  def handle_call({:move, n}, _from, %{session: %GameSession{game_state: :playing}} = state) do
+    %{game_id: game_id,
+      session: %{board: board,
+                 player: player} = session} = state
 
-    new_state =
+    new_session =
     if valid_move?(board, n) do
-      new_state_1 = %{state | board: new_board(player, n, board)}
-      case check_for_end(new_state_1) do
+      new_session_1 = %{session | board: new_board(player, n, board)}
+      case check_for_end(new_session_1) do
         {:win, win} ->
-          %{new_state_1 | game_state: {:win, win}}
+          %{new_session_1 | game_state: {:win, win}}
         :draw ->
-          %{new_state_1 | game_state: :draw}
+          %{new_session_1 | game_state: :draw}
         :playing ->
-          %{new_state_1 | player: next_player(player)}
+          %{new_session_1 | player: next_player(player)}
       end
     else
-      state
+      session
     end
-
-    {:reply, new_state, new_state}
+    SessionStore.update_session(game_id, new_session)
+    {:reply, new_session, %{state | session: new_session}}
   end
 
-  def handle_call({:move, _}, _from, state) do
+  def handle_call({:move, _}, _from, %{session: session} = state) do
     ## do nothing when moving in non-playing state.
-    {:reply, state, state}
+    {:reply, session, state}
   end
 
-  def handle_call(:reset, _from, _state) do
-    reset_state = %GameState{}
-    {:reply, reset_state, reset_state}
+  def handle_call(:reset, _from, %{game_id: game_id} = state) do
+    new_session = %GameSession{}
+    SessionStore.update_session(game_id, new_session)
+    {:reply, new_session, %{state | session: new_session}}
+  end
+
+  @impl true
+  def terminate(_reason, %{game_id: game_id}) do
+    SessionStore.delete_session(game_id)
   end
 
   ## Helper functions
@@ -111,11 +132,11 @@ defmodule TicTacToe.GameServer do
   end
 end
 
-defimpl Inspect, for: TicTacToe.GameState do
+defimpl Inspect, for: TicTacToe.GameSession do
 
-  def inspect(%TicTacToe.GameState{game_state: game_state,
-                                   player: player,
-                                   board: {crosses, noughts}}, _opts) do
+  def inspect(%TicTacToe.GameSession{game_state: game_state,
+                                     player: player,
+                                     board: {crosses, noughts}}, _opts) do
     cs = Stream.repeatedly(fn -> "X" end) |> Enum.zip(crosses)
     ns = Stream.repeatedly(fn -> "O" end) |> Enum.zip(noughts)
     all = Enum.sort(cs ++ ns, &(elem(&1, 1) < elem(&2, 1)))

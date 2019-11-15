@@ -23,10 +23,7 @@ defmodule TicTacToe.GameServerSup do
   end
 
   def init(init_args) do
-    # :ets.new(:game_state, [:public,
-    #                        :named_table,
-    #                        :set,
-    #                        {:write_concurrency, true}])
+    TicTacToe.SessionStore.new()
 
     DynamicSupervisor.init(
       strategy: :one_for_one,

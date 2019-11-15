@@ -26,11 +26,13 @@ defmodule TicTacToe.Router do
 
   ## c:handle_call/3
   def handle_call(:new_game, _from, state) do
-    opts = Map.take(state, [:game_server_mod]) |> Map.to_list
+    game_id = make_ref()
+    opts = Map.take(state, [:game_server_mod])
+    |> Map.to_list
+    |> Keyword.put(:game_id, game_id)
 
     case GameServerSup.start_child(opts) do
       {:ok, game_server_pid} ->
-        game_id = make_ref()
         mon_ref = Process.monitor(game_server_pid)
         %{routes: routes,
           monitors: monitors} = state
@@ -96,9 +98,9 @@ defmodule TicTacToe.Router do
                 game_server_mod: game_server_mod,
                 game_id: game_id) do
             {:ok, new_pid} ->
-              Logger.info(
-                "Game server #{inspect(pid)} is down with reason #{inspect(reason)},
-                but automatically restarted.")
+              Logger.warn(
+                "Game server #{inspect(game_id)} is down with reason #{inspect(reason)}, but automatically restarted."
+              )
 
               new_mon_ref = Process.monitor(new_pid)
               %{state |
