@@ -127,13 +127,13 @@ defimpl Inspect, for: TicTacToe.GameState do
       end
     end
 
-    Enum.join(["",
-               "Game state: #{inspect(game_state)}",
+    Enum.join(["Game state: #{inspect(game_state)}",
                "Player: #{inspect(player)}",
                "",
                " #{format_fn.(1)} | #{format_fn.(2)} | #{format_fn.(3)} ",
                " #{format_fn.(4)} | #{format_fn.(5)} | #{format_fn.(6)} ",
                " #{format_fn.(7)} | #{format_fn.(8)} | #{format_fn.(9)} ",
+               "",
                ""],
       "\n")
   end
