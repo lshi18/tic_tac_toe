@@ -16,7 +16,6 @@ defmodule TicTacToe do
   Thus, the move/2 function shall receive a number from 1 to 9, and the semantics of which is
   defined as depicted above.
 
-  ## Example:
       iex> import TicTacToe
       TicTacToe
 
@@ -41,9 +40,7 @@ defmodule TicTacToe do
 
   Concurrent games can be started and identied by its own game id.
 
-  ## Example:
       iex> {:ok, game2, _session} = new_game()
-
       {:ok, #Reference<0.3646061956.1345847299.109312>,
        Game state: :playing
        Player: :crosses
@@ -66,14 +63,11 @@ defmodule TicTacToe do
   If a game server crashes, it will be automatically restarted, and its session data
   will be restored to the point before its crash.
 
-  ## Example:
-
-      ## <0,190,0> is game1's server pid, it should be different. Find out using observer.
       iex> pid_for_game1 = :sys.get_state(TicTacToe.Router) |> Map.get(:routes) |> Map.get(game1)
       iex> :erlang.exit(pid_for_game1, :crashed)
       true
 
-      ## game1 preserves its previous state and can be played on.
+      ## game1 can be continued to play from the status before its crash.
       iex> move(game1, 7)
       Game state: :playing
       Player: :crosses
@@ -81,6 +75,30 @@ defmodule TicTacToe do
       _ | _ | X
       _ | _ | _
       O | _ | _
+
+
+  When a game has played out, use restart/1 to explicitly restart the game.
+
+      iex> move(game1, 6)
+      Game state: {:win, [{1, 5, 9}]}
+      Player: :crosses
+
+      X | X | O
+      O | X | _
+      O | _ | X
+
+      iex> restart(game1)
+      Game state: :playing
+      Player: :crosses
+
+      _ | _ | _
+      _ | _ | _
+      _ | _ | _
+
+  To quit a game, use quit/1 to clean up and release memory.
+
+      iex> quit(game1)
+      {:ok, :ok}
 
   """
   require Logger
@@ -111,9 +129,11 @@ defmodule TicTacToe do
   Play a move in a specific game id,  which should be one returned from new_game/0.
 
   A valid input should be an integer in range 1 .. 9,
-  and it should be a move that has not been played in this game session yet.
+  and it should be a move that has not been played in this game session before.
 
-  If the input is invalid, then the current game session data is returned.
+  If the input is invalid, then the current game session data is returned without
+  any updates.
+
   If the input is valid, the updated game session data will be returned.
 
   {:error, reason} will be returned if the operation fails.
