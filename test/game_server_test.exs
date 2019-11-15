@@ -27,14 +27,18 @@ defmodule TicTacToeGameServerTest do
     GS.stop(pid)
   end
 
-  test "play invalid moves" do
+  test "invalid move not in the range of 1 .. 9" do
     {:ok, pid} = GS.start_link([])
-    state = GS.move(pid, 11)
+    state = GS.move(pid, 10)
     assert %Session{player: :crosses,
                     game_state: :playing,
                     board: {[], []}} == state
 
-    ## can't play to the occupied square
+    GS.stop(pid)
+  end
+
+  test "invalid move to occupied squares" do
+    {:ok, pid} = GS.start_link([])
     GS.move(pid, 3)
     state = GS.move(pid, 3)
     assert %Session{player: :noughts,
@@ -47,6 +51,23 @@ defmodule TicTacToeGameServerTest do
                     game_state: :playing,
                     board: {[3], [5]}} == state
 
+    GS.stop(pid)
+  end
+
+  test "invalid move after the game has finished." do
+    {:ok, pid} = GS.start_link([])
+
+    moves = [{:c, 1}, {:n, 5},
+             {:c, 2}, {:n, 4},
+             {:c, 3}]
+
+    final_state =
+    for {_player, move} <- moves do
+      GS.move(pid, move)
+    end
+    |> List.last
+
+    assert GS.move(pid, 6) == final_state
     GS.stop(pid)
   end
 
