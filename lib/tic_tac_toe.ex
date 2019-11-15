@@ -141,8 +141,8 @@ defmodule TicTacToe do
   @spec move(game_id(), input :: integer()) :: TicTacToe.GameSession.t | {:error, term()}
   def move(game, n) do
     case Router.route_to(game, {:move, [n]}) do
-      {:ok, reply} ->
-        reply
+      {:ok, session} ->
+        session
       {:error, reason} ->
         {:error, reason}
     end
@@ -162,8 +162,8 @@ defmodule TicTacToe do
   @spec restart(game_id()) :: TicTacToe.GameSession.t | {:error, term()}
   def restart(game) do
     case Router.route_to(game, :reset) do
-      {:ok, reply} ->
-        reply
+      {:ok, session} ->
+        session
       {:error, reason} ->
         {:error, reason}
     end
