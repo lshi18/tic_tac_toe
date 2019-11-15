@@ -151,26 +151,24 @@ defmodule TicTacToe.Router do
       worker_server_mod: worker_server_mod} = state
 
     new_state =
-      case remove_route_and_monitors(mon_ref, pid, routes, monitors) do
-        :not_found ->
-          state
-        {worker_id, updated_routes, updated_monitors} ->
-          case GameServerSup.start_child(
-                worker_server_mod: worker_server_mod,
-                worker_id: worker_id) do
-            {:ok, new_pid} ->
-              Logger.warn(
-                "Server #{inspect(worker_id)} is down with reason #{inspect(reason)}, but automatically restarted."
-              )
+      with {worker_id,
+            updated_routes,
+            updated_monitors} <- remove_route_and_monitors(mon_ref, pid, routes, monitors),
+           {:ok, new_pid} <- GameServerSup.start_child(worker_server_mod: worker_server_mod, worker_id: worker_id)
+      do
+        Logger.warn(
+          "Server #{inspect(worker_id)} is down with reason #{inspect(reason)}, but automatically restarted."
+        )
 
-              new_mon_ref = Process.monitor(new_pid)
-              %{state |
-                routes: Map.put(updated_routes, worker_id, new_pid),
-                monitors: Map.put(updated_monitors, {new_mon_ref, new_pid}, worker_id)}
-            _other ->
-              state
-          end
+        new_mon_ref = Process.monitor(new_pid)
+        %{state |
+          routes: Map.put(updated_routes, worker_id, new_pid),
+          monitors: Map.put(updated_monitors, {new_mon_ref, new_pid}, worker_id)}
+      else
+        _other ->
+          state
       end
+
     {:noreply, new_state}
   end
   def handle_info(_info, state), do: {:noreply, state}
