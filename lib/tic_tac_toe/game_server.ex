@@ -1,6 +1,14 @@
+defmodule TicTacToe.GameState do
+  defstruct [player: :crosses,
+             board: {[], []},
+             game_state: :playing]
+end
+
 defmodule TicTacToe.GameServer do
   use GenServer
   require Logger
+
+  alias TicTacToe.GameState
 
   def start_link(init_args) do
     GenServer.start_link(__MODULE__, init_args)
@@ -18,34 +26,9 @@ defmodule TicTacToe.GameServer do
 
   def reset(game_server), do: GenServer.call(game_server, :reset)
 
-  def format(%{game_state: game_state,
-               player: player,
-               board: {crosses, noughts}} = state) do
-    cs = Stream.repeatedly(fn -> "X" end) |> Enum.zip(crosses)
-    ns = Stream.repeatedly(fn -> "O" end) |> Enum.zip(noughts)
-    all = Enum.sort(cs ++ ns, &(elem(&1, 1) < elem(&2, 1)))
-
-    format_fn = fn n ->
-      case List.keyfind(all, n, 1) do
-        {p, ^n} -> p
-        nil -> "_"
-      end
-    end
-
-    IO.puts("")
-    IO.puts("Game state: #{inspect(game_state)}")
-    IO.puts("Player: #{inspect(player)}")
-
-    IO.puts(" #{format_fn.(1)} | #{format_fn.(2)} | #{format_fn.(3)} ")
-    IO.puts(" #{format_fn.(4)} | #{format_fn.(5)} | #{format_fn.(6)} ")
-    IO.puts(" #{format_fn.(7)} | #{format_fn.(8)} | #{format_fn.(9)} ")
-
-    state
-  end
-
   @impl true
   def init(_init_args) do
-    {:ok, new_state()}
+    {:ok, %GameState{}}
   end
 
   @impl true
@@ -81,17 +64,11 @@ defmodule TicTacToe.GameServer do
   end
 
   def handle_call(:reset, _from, _state) do
-    reset_state = new_state()
+    reset_state = %GameState{}
     {:reply, reset_state, reset_state}
   end
 
   ## Helper functions
-  defp new_state() do
-    %{player: :crosses,
-      board: {[], []},
-      game_state: :playing}
-  end
-
   defp valid_move?({crosses, noughts}, n) do
     (n in 1..9) and (n not in crosses) and (n not in noughts)
   end
@@ -132,4 +109,33 @@ defmodule TicTacToe.GameServer do
 
     if Enum.empty?(win), do: :playing, else: {:win, win}
   end
+end
+
+defimpl Inspect, for: TicTacToe.GameState do
+
+  def inspect(%TicTacToe.GameState{game_state: game_state,
+                                   player: player,
+                                   board: {crosses, noughts}}, _opts) do
+    cs = Stream.repeatedly(fn -> "X" end) |> Enum.zip(crosses)
+    ns = Stream.repeatedly(fn -> "O" end) |> Enum.zip(noughts)
+    all = Enum.sort(cs ++ ns, &(elem(&1, 1) < elem(&2, 1)))
+
+    format_fn = fn n ->
+      case List.keyfind(all, n, 1) do
+        {p, ^n} -> p
+        nil -> "_"
+      end
+    end
+
+    Enum.join(["",
+               "Game state: #{inspect(game_state)}",
+               "Player: #{inspect(player)}",
+               "",
+               " #{format_fn.(1)} | #{format_fn.(2)} | #{format_fn.(3)} ",
+               " #{format_fn.(4)} | #{format_fn.(5)} | #{format_fn.(6)} ",
+               " #{format_fn.(7)} | #{format_fn.(8)} | #{format_fn.(9)} ",
+               ""],
+      "\n")
+  end
+
 end
