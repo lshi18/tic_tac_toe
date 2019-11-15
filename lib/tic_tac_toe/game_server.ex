@@ -1,37 +1,57 @@
 defmodule TicTacToe.GameSession do
+
   defstruct [player: :crosses,
              board: {[], []},
              game_state: :playing]
+
+  @type t :: %__MODULE__{
+    player: :crosses | :noughts,
+    board: {list(integer), list(integer)},
+    game_state: :playing | :draw | {:win, list({integer, integer, integer})}
+  }
 end
 
+
 defmodule TicTacToe.GameServer do
+  @doc """
+  The tic-tac-toe's game server implementation.
+
+  An ets-based session store is used in this implementation,
+  so that the session data can survive a crash.
+  """
+
   use GenServer
   require Logger
 
   alias TicTacToe.GameSession
   alias TicTacToe.SessionStore
 
+  @doc false
   def start_link(init_args) do
     GenServer.start_link(__MODULE__, init_args)
   end
 
+  @doc false
   def get_game_state(game_server) do
     GenServer.call(game_server, :get_game_state)
   end
 
+  @doc false
   def move(game_server, n) do
     GenServer.call(game_server, {:move, n})
   end
 
+  @doc false
   def stop(game_server) do
     GenServer.stop(game_server)
   end
 
+  @doc false
   def reset(game_server), do: GenServer.call(game_server, :reset)
 
   @impl true
   def init(init_args) do
-    game_id = Keyword.get(init_args, :game_id)
+    game_id = Keyword.get(init_args, :worker_id)
     session =
       case SessionStore.get_session(game_id) do
         :no_session ->
@@ -135,6 +155,7 @@ defmodule TicTacToe.GameServer do
   end
 end
 
+
 defimpl Inspect, for: TicTacToe.GameSession do
 
   def inspect(%TicTacToe.GameSession{game_state: game_state,
@@ -161,5 +182,4 @@ defimpl Inspect, for: TicTacToe.GameSession do
                ""],
       "\n")
   end
-
 end

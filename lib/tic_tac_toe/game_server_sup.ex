@@ -6,11 +6,11 @@ defmodule TicTacToe.GameServerSup do
   end
 
   def start_child(opts) do
-    game_server_mod = Keyword.fetch!(opts, :game_server_mod)
-    game_id = Keyword.get(opts, :game_id)
+    worker_server_mod = Keyword.fetch!(opts, :worker_server_mod)
+    worker_id = Keyword.get(opts, :worker_id)
 
-    worker_spec = %{id: game_server_mod,
-                    start: {game_server_mod, :start_link, [[game_id: game_id]]},
+    worker_spec = %{id: worker_server_mod,
+                    start: {worker_server_mod, :start_link, [[worker_id: worker_id]]},
                     restart: :temporary
                    }
 

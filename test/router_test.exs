@@ -6,14 +6,14 @@ defmodule TicTacToeRouterTest do
 
   test "Start a new worker via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
-    {:ok, game_id} = R.new_game()
+    {:ok, game_id} = R.new_worker()
     assert is_reference(game_id)
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
   test "Operate via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
-    {:ok, game_id} = R.new_game()
+    {:ok, game_id} = R.new_worker()
 
     R.route_to(game_id, {:do_op, [:operation1]})
     R.route_to(game_id, {:do_op, [:operation2]})
@@ -26,7 +26,7 @@ defmodule TicTacToeRouterTest do
 
   test "Test normally stopped workers with reason :normal, :shutdown or {:shutdown, _} don't get restarted." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
-    {:ok, game_id} = R.new_game()
+    {:ok, game_id} = R.new_worker()
 
     assert %{active: 1, workers: 1, specs: 1, supervisors: 0} ==
       Supervisor.count_children(TicTacToe.GameServerSup)
@@ -34,7 +34,7 @@ defmodule TicTacToeRouterTest do
     assert %{active: 0, workers: 0, specs: 0, supervisors: 0} ==
       Supervisor.count_children(TicTacToe.GameServerSup)
 
-    {:ok, game_id} = R.new_game()
+    {:ok, game_id} = R.new_worker()
     assert %{active: 1, workers: 1, specs: 1, supervisors: 0} ==
       Supervisor.count_children(TicTacToe.GameServerSup)
     {:ok, %{pid: pid}} = R.route_to(game_id, {:do_op, [:op]})
@@ -48,7 +48,7 @@ defmodule TicTacToeRouterTest do
 
   test "Test abnormally exit work will be automatically restarted" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
-    {:ok, game_id} = R.new_game()
+    {:ok, game_id} = R.new_worker()
 
     assert %{active: 1, workers: 1, specs: 1, supervisors: 0} ==
       Supervisor.count_children(TicTacToe.GameServerSup)
@@ -68,8 +68,8 @@ defmodule TicTacToeRouterTest do
 
   test "Test concurrent workers" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
-    {:ok, game_id_1} = R.new_game()
-    {:ok, game_id_2} = R.new_game()
+    {:ok, game_id_1} = R.new_worker()
+    {:ok, game_id_2} = R.new_worker()
 
     R.route_to(game_id_1, {:do_op, [:g1_op_1]})
     R.route_to(game_id_1, {:do_op, [:g1_op_2]})
