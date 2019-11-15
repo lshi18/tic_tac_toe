@@ -9,20 +9,20 @@ defmodule TicTacToe do
   Start a new game.
   """
   def new_game() do
-    {:ok, game_id} = TicTacToe.Router.new_game()
-    Logger.info("New game created: #{inspect(game_id)}")
-    {:ok, state} = Router.route_to(game_id, :get_game_state)
-    IO.inspect(state)
-    {:ok, game_id}
+    {:ok, game} = TicTacToe.Router.new_game()
+    Logger.info("New game created: #{inspect(game)}")
+    {:ok, state} = Router.route_to(game, :get_game_state)
+    IO.inspect(state) ## print the initial state for visual help
+    {:ok, game}
   end
 
   @doc """
   Play a move in a specific game.
   """
   def move(game, n) do
-    IO.puts("Game ID: #{inspect(game)}")
     case Router.route_to(game, {:move, [n]}) do
       {:ok, reply} ->
+        IO.puts("Move in game: #{inspect(game)}")
         reply
       {:error, reason} ->
         {:error, reason}
@@ -30,9 +30,9 @@ defmodule TicTacToe do
   end
 
   def restart(game) do
-    IO.puts("Game ID: #{inspect(game)}")
     case Router.route_to(game, :reset) do
       {:ok, reply} ->
+        IO.puts("Restart in game: #{inspect(game)}")
         reply
       {:error, reason} ->
         {:error, reason}

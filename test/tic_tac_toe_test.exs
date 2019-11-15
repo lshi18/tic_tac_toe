@@ -37,11 +37,12 @@ defmodule TicTacToeTest do
              player: :noughts,
              game_state: :playing} == TicTacToe.move(game2, 6) |> IO.inspect |> Map.from_struct
 
-    IO.puts("## Game 1 should be played from a good state")
+    IO.puts("## Game 1 should be able to be played from a good state")
     assert %{board: {[6], []},
              player: :noughts,
              game_state: :playing} == TicTacToe.move(game1, 6) |> IO.inspect |> Map.from_struct
 
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
+
 end
