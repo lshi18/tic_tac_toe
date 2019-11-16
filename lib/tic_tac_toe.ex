@@ -5,9 +5,9 @@ defmodule TicTacToe do
   The TicTacToe server is built on TicTacToe.Router and a customizable and configurable
   game server.
 
-  The API provided in this module provides a shell friendly inerface for playing the game.
-  But it also serves as an example as how to build a front end utilizing the lower Router
-  API. For more information, please see TicTacToe.Router.
+  The API provided in this module provides a shell friendly interface for playing the game.
+  But it also serves as an example on how to build a front-end utilizing the lower
+  level Router API. For more information, please see TicTacToe.Router.
 
   The 3 x 3 grid is numbered 1 to 9, left to right, and top to bottom:
 
@@ -77,7 +77,7 @@ defmodule TicTacToe do
       O | _ | _
 
 
-  When a game has played out, use restart/1 to explicitly restart the game.
+  When a game session has finished, use restart/1 to explicitly restart the game.
 
       iex> move(game1, 6)
       Game state: {:win, [{1, 5, 9}]}
@@ -95,7 +95,7 @@ defmodule TicTacToe do
       _ | _ | _
       _ | _ | _
 
-  To quit a game, use quit/1 to clean up and release memory.
+  To quit a game, use quit/1 to clean up and release the memory.
 
       iex> quit(game1)
       {:ok, :ok}
@@ -151,12 +151,12 @@ defmodule TicTacToe do
     case Router.route_to(game, {:move, [n]}) do
       {:ok, {:invalid_move, :move_in_non_playing_state}} ->
         display_error(["The game session has finished.\n",
-                      "To continue, please use TicTacToe.restart/1 to start a new game.\n",
-                      "To quit, please use TicTacToe.quit/1.\n"])
+                       "To continue, please use TicTacToe.restart/1 to start a new game.\n",
+                       "To quit, please use TicTacToe.quit/1.\n"])
         game_session(game)
       {:ok, {:invalid_move, :integer_in_1_to_9}} ->
         display_error(["Invalid move!\n",
-                      "Please enter an integer between 1 and 9 as your move.\n"])
+                       "Please enter an integer between 1 and 9 as your move.\n"])
         game_session(game)
       {:ok, {:invalid_move, :move_to_occupied_square}} ->
         display_error("Square #{n} has been occupied, please make another move.\n")
