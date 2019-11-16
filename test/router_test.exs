@@ -4,6 +4,27 @@ defmodule TicTacToeRouterTest do
   alias TicTacToe.Router, as: R
   alias TicTacToeRouterTest.TestGameServer
 
+  test "Start the router with unknown worker module." do
+    Process.flag(:trap_exit, true)
+    R.start_link([worker_server_mod: TestGameServerUnknown])
+    receive do
+      {:"EXIT", _, {:worker_server_mod_not_exist, _}}->
+        assert true
+      after
+        3000 -> assert false
+    end
+  end
+
+  test "Trying to apply undefined function at runtime" do
+    {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
+    {:ok, worker} = R.new_worker
+
+    assert {:error, {:undefined_function, {TestGameServer, :some_fn, 1}}} ==
+      R.route_to(worker, :some_fn)
+
+    :ok = stop_supervised(TicTacToe.Supervisor)
+  end
+
   test "Start a new worker via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id} = R.new_worker()

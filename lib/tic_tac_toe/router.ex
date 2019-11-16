@@ -21,15 +21,17 @@ defmodule TicTacToe.Router do
   2. Monitoring information.
     A tuple of monitoring reference and the worker pid => the worker ref
 
+  The first map is used to lookup work's real-time pid when routing message
+  via the specified worker id. Because the former can be susceptible to changes
+  after possible crashes.
+
+  The second map is used when a worker crashes, under which circumstances
+  the router shall receive a notification and update the routing information properly.
+
   The worker id is created when a new worker is started, and is
-  available for refering to this worker until the work exits properly.
-
-  The first tuple is used to route request to specific work id to
-  its actual pid, because the latter can be susceptible to changes after
-  possible crashes.
-
-  The second tuple is used when a worker crashes, under which circumstances
-  the Router shall receive notification and update the routing information properly.
+  available until the work exits properly. It a worker server exits abnormally,
+  the worker id can still be used to reference the automatically restarted
+  worker server.
   """
 
   use GenServer
@@ -69,6 +71,11 @@ defmodule TicTacToe.Router do
 
   where the former two are provided as input to route_to/2, and the last
   one is saved in the router's process.
+
+  It returns {:ok, reply} when the request is successfully routed, where
+  reply is the response from the worker server.
+
+  If it fails to routes the message, {:error, reason} will be returned.
   """
   @spec route_to(worker_id(), :atom | {:atom, list()}) :: {:ok, term()} | {:error, term()}
   def route_to(worker_id, fun) when is_atom(fun) do
@@ -79,10 +86,16 @@ defmodule TicTacToe.Router do
   end
 
   @impl true
-  def init(worker_server_mod: worker_server_mod) do
-    {:ok, %{routes: %{},
-            monitors: %{},
-            worker_server_mod: worker_server_mod}}
+  def init(opts) do
+    worker_server_mod = Keyword.get(opts, :worker_server_mod)
+    case :code.ensure_loaded(worker_server_mod) do
+      {:error, _reason} ->
+        {:stop, {:worker_server_mod_not_exist, worker_server_mod}}
+      {:module, _} ->
+        {:ok, %{routes: %{},
+                monitors: %{},
+                worker_server_mod: worker_server_mod}}
+    end
   end
 
   @impl true
@@ -118,7 +131,13 @@ defmodule TicTacToe.Router do
           Logger.warn("no route for: #{inspect(worker_id)}")
           {:error, :no_such_worker}
         worker_server when is_pid(worker_server) ->
-          {:ok, apply(worker_server_mod, fun, [worker_server | args])}
+          all_args = [worker_server | args]
+          arity = length(all_args)
+          if function_exported?(worker_server_mod, fun, arity) do
+            {:ok, apply(worker_server_mod, fun, all_args)}
+          else
+            {:error, {:undefined_function, {worker_server_mod, fun, arity}}}
+          end
       end
     {:reply, reply, state}
   end
