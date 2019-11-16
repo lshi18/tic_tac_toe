@@ -4,7 +4,7 @@ defmodule TicTacToeRouterTest do
   alias TicTacToe.Router, as: R
   alias TicTacToeRouterTest.TestGameServer
 
-  test "Start the router with unknown worker module." do
+  test "start the router with unknown worker module." do
     Process.flag(:trap_exit, true)
     R.start_link([worker_server_mod: TestGameServerUnknown])
     receive do
@@ -15,7 +15,7 @@ defmodule TicTacToeRouterTest do
     end
   end
 
-  test "Trying to apply undefined function at runtime" do
+  test "trying to apply undefined function at runtime" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, worker} = R.new_worker
 
@@ -25,14 +25,14 @@ defmodule TicTacToeRouterTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Start a new worker via the router." do
+  test "start a new worker via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id} = R.new_worker()
     assert is_reference(game_id)
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Operate via the router." do
+  test "operate via the router." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id} = R.new_worker()
 
@@ -45,7 +45,7 @@ defmodule TicTacToeRouterTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test normally stopped workers with reason :normal, :shutdown or {:shutdown, _} don't get restarted." do
+  test "normally stopped workers with reason :normal, :shutdown or {:shutdown, _} don't get restarted." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id} = R.new_worker()
 
@@ -67,7 +67,7 @@ defmodule TicTacToeRouterTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test abnormally exit work will be automatically restarted" do
+  test "abnormally exit work will be automatically restarted" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id} = R.new_worker()
 
@@ -87,7 +87,7 @@ defmodule TicTacToeRouterTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test concurrent workers" do
+  test "concurrent workers" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, [game_server_mod: TestGameServer]})
     {:ok, game_id_1} = R.new_worker()
     {:ok, game_id_2} = R.new_worker()

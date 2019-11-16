@@ -3,7 +3,7 @@ defmodule TicTacToeTest do
   import TicTacToe
   alias TicTacToe.GameSession, as: Session
 
-  test "Test new_game/0 and quit/1." do
+  test "new_game/0 and quit/1." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -13,7 +13,7 @@ defmodule TicTacToeTest do
     assert :no_session == TicTacToe.SessionStore.get_session(game)
   end
 
-  test "Test move/2" do
+  test "move/2" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -24,7 +24,7 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test invalid move." do
+  test "invalid move." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -44,7 +44,7 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test move after game finished fails" do
+  test "move after game finished fails" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -61,7 +61,7 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test restart/1." do
+  test "restart/1." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -73,7 +73,7 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test game_session/1" do
+  test "game_session/1" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game} = new_game()
@@ -87,7 +87,7 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test start two concurrent games and play concurrently." do
+  test "start two concurrent games and play concurrently." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
     {:ok, game1} = new_game()

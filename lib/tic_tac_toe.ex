@@ -154,7 +154,7 @@ defmodule TicTacToe do
                        "To continue, please use TicTacToe.restart/1 to start a new game.\n",
                        "To quit, please use TicTacToe.quit/1.\n"])
         game_session(game)
-      {:ok, {:invalid_move, :integer_in_1_to_9}} ->
+      {:ok, {:invalid_move, :not_integer_in_1_to_9}} ->
         display_error(["Invalid move!\n",
                        "Please enter an integer between 1 and 9 as your move.\n"])
         game_session(game)
