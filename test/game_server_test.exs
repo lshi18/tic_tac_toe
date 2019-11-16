@@ -5,11 +5,7 @@ defmodule TicTacToeGameServerTest do
 
   test "start a new game" do
     {:ok, pid} = GS.start_link([])
-    state = GS.get_game_state(pid)
-
-    assert :crosses == state.player
-    assert :playing == state.game_state
-    assert {[], []} == state.board
+    assert %Session{} = GS.get_game_session(pid)
 
     GS.stop(pid)
   end
@@ -29,27 +25,18 @@ defmodule TicTacToeGameServerTest do
 
   test "invalid move not in the range of 1 .. 9" do
     {:ok, pid} = GS.start_link([])
-    state = GS.move(pid, 10)
-    assert %Session{player: :crosses,
-                    game_state: :playing,
-                    board: {[], []}} == state
+
+    assert {:invalid_move, :integer_in_1_to_9} == GS.move(pid, 10)
+    assert {:invalid_move, :integer_in_1_to_9} = GS.move(pid, 3.0)
 
     GS.stop(pid)
   end
 
   test "invalid move to occupied squares" do
     {:ok, pid} = GS.start_link([])
-    GS.move(pid, 3)
-    state = GS.move(pid, 3)
-    assert %Session{player: :noughts,
-                    game_state: :playing,
-                    board: {[3], []}} == state
 
     GS.move(pid, 5)
-    state = GS.move(pid, 5)
-    assert %Session{player: :crosses,
-                    game_state: :playing,
-                    board: {[3], [5]}} == state
+    assert {:invalid_move, :move_to_occupied_square} = GS.move(pid, 5)
 
     GS.stop(pid)
   end
@@ -61,13 +48,12 @@ defmodule TicTacToeGameServerTest do
              {:c, 2}, {:n, 4},
              {:c, 3}]
 
-    final_state =
     for {_player, move} <- moves do
       GS.move(pid, move)
     end
     |> List.last
 
-    assert GS.move(pid, 6) == final_state
+    assert {:invalid_move, :move_in_non_playing_state} = GS.move(pid, 6)
     GS.stop(pid)
   end
 
@@ -158,19 +144,17 @@ defmodule TicTacToeGameServerTest do
     GS.stop(pid)
   end
 
-  test "test trying to reset an unfinished game, reset will not take effect." do
+  test "test successfully reset an ongoing game." do
     {:ok, pid} = GS.start_link([])
     moves = [{:c, 1}, {:n, 8},
              {:c, 2}, {:n, 3},
              {:c, 7}]
 
-    state =
     for {_player, move} <- moves do
       GS.move(pid, move)
     end |> List.last
 
-    state1 = GS.reset(pid)
-    assert state == state1
+    assert %Session{}= GS.reset(pid)
 
     GS.stop(pid)
   end

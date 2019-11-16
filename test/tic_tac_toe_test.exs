@@ -5,7 +5,7 @@ defmodule TicTacToeTest do
   test "Test new_game/0 and quit/1." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
-    {:ok, game, _} = new_game()
+    {:ok, game} = new_game()
     refute :no_session == TicTacToe.SessionStore.get_session(game)
 
     {:ok, :ok} = TicTacToe.quit(game)
@@ -15,7 +15,7 @@ defmodule TicTacToeTest do
   test "Test move/2" do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
-    {:ok, game, _} = new_game()
+    {:ok, game} = new_game()
 
     move(game, 3)
     move(game, 4)
@@ -23,25 +23,16 @@ defmodule TicTacToeTest do
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
 
-  test "Test restart/1. It only takes effect when game has finished." do
+  test "Test restart/1." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
-    {:ok, game, _} = new_game()
+    {:ok, game} = new_game()
 
     move(game, 3)
-    s1 = move(game, 4)
-    s2 = restart(game)
-
-    assert s1 == s2
-
-    move(game, 2)
-    move(game, 7)
-    s3 = move(game, 1) |> Map.from_struct
-    assert s3[:game_state] == {:win, [{1, 2, 3}]}
-
-    s4 = restart(game) |> Map.from_struct
-    assert s4[:game_state] == :playing
-    assert s4[:board] == {[], []}
+    move(game, 4)
+    assert %{board: {[], []},
+             player: :crosses,
+             game_state: :playing} = restart(game) |> Map.from_struct
 
     :ok = stop_supervised(TicTacToe.Supervisor)
   end
@@ -49,8 +40,8 @@ defmodule TicTacToeTest do
   test "Test start two concurrent games and play concurrently." do
     {:ok, _} = start_supervised({TicTacToe.Supervisor, []})
 
-    {:ok, game1, _} = new_game()
-    {:ok, game2, _} = new_game()
+    {:ok, game1} = new_game()
+    {:ok, game2} = new_game()
 
     ## Cross played in square 1 in game 1"
     assert %{board: {[1], []},

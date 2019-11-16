@@ -13,7 +13,7 @@ end
 
 
 defmodule TicTacToe.GameServer do
-  @doc """
+  @moduledoc """
   The tic-tac-toe's game server implementation.
 
   An ets-based session store is used in this implementation,
@@ -32,8 +32,8 @@ defmodule TicTacToe.GameServer do
   end
 
   @doc false
-  def get_game_state(game_server) do
-    GenServer.call(game_server, :get_game_state)
+  def get_game_session(game_server) do
+    GenServer.call(game_server, :get_game_session)
   end
 
   @doc false
@@ -66,7 +66,7 @@ defmodule TicTacToe.GameServer do
   end
 
   @impl true
-  def handle_call(:get_game_state, _from, %{session: session} = state) do
+  def handle_call(:get_game_session, _from, %{session: session} = state) do
     {:reply, session, state}
   end
 
@@ -75,32 +75,29 @@ defmodule TicTacToe.GameServer do
       session: %{board: board,
                  player: player} = session} = state
 
-    new_session =
-    if valid_move?(board, n) do
-      new_session_1 = %{session | board: new_board(player, n, board)}
-      case check_for_end(new_session_1) do
-        {:win, win} ->
-          %{new_session_1 | game_state: {:win, win}}
-        :draw ->
-          %{new_session_1 | game_state: :draw}
-        :playing ->
-          %{new_session_1 | player: next_player(player)}
-      end
-    else
-      session
+    case check_valid_move(board, n) do
+      {false, reason} ->
+        {:reply, {:invalid_move, reason}, state}
+      true ->
+        new_session_1 = %{session | board: new_board(player, n, board)}
+        new_session =
+          case check_for_end(new_session_1) do
+            {:win, win} ->
+              %{new_session_1 | game_state: {:win, win}}
+            :draw ->
+              %{new_session_1 | game_state: :draw}
+            :playing ->
+              %{new_session_1 | player: next_player(player)}
+          end
+        SessionStore.update_session(game_id, new_session)
+        {:reply, new_session, %{state | session: new_session}}
     end
-    SessionStore.update_session(game_id, new_session)
-    {:reply, new_session, %{state | session: new_session}}
   end
 
-  def handle_call({:move, _}, _from, %{session: session} = state) do
-    ## do nothing when moving in non-playing state.
-    {:reply, session, state}
+  def handle_call({:move, _}, _from, state) do
+    {:reply, {:invalid_move, :move_in_non_playing_state}, state}
   end
 
-  def handle_call(:reset, _from, %{session: %GameSession{game_state: :playing} = session} = state) do
-    {:reply, session, state}
-  end
   def handle_call(:reset, _from, %{game_id: game_id} = state) do
     new_session = %GameSession{}
     SessionStore.update_session(game_id, new_session)
@@ -113,8 +110,15 @@ defmodule TicTacToe.GameServer do
   end
 
   ## Helper functions
-  defp valid_move?({crosses, noughts}, n) do
-    (n in 1..9) and (n not in crosses) and (n not in noughts)
+  defp check_valid_move(_board, n) when n not in 1 .. 9 do
+    {false, :integer_in_1_to_9}
+  end
+  defp check_valid_move({crosses, noughts}, n)  do
+    if n in crosses or n in noughts do
+      {false, :move_to_occupied_square}
+    else
+      true
+    end
   end
 
   defp check_for_end(%{player: player, board: board}) do

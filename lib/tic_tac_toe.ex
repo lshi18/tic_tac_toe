@@ -2,10 +2,12 @@ defmodule TicTacToe do
   @moduledoc """
   Documentation for TicTacToe.
 
-  This module provides an API which is a thin wrapper based on TicTacToe.Router, to
-  facilitate playing the tic-tac-toe game in the elixir shell (start with "iex -S mix").
-  But the API in this module also serves as a backend service, which facilitate
-  the building of the tic-tac-toe game's frontend.
+  The TicTacToe server is built on TicTacToe.Router and a customizable and configurable
+  game server.
+
+  The API provided in this module provides a shell friendly inerface for playing the game.
+  But it also serves as an example as how to build a front end utilizing the lower Router
+  API. For more information, please see TicTacToe.Router.
 
   The 3 x 3 grid is numbered 1 to 9, left to right, and top to bottom:
 
@@ -20,15 +22,14 @@ defmodule TicTacToe do
       TicTacToe
 
       iex> {:ok, game1, _session} = new_game()
-      {:ok, #Reference<0.3646061956.1345847299.109215>,
-       Game state: :playing
-       Player: :crosses
+      Game state: :playing
+      Player: :crosses
 
-       _ | _ | _
-       _ | _ | _
-       _ | _ | _
+      _ | _ | _
+      _ | _ | _
+      _ | _ | _
 
-      }
+      {:ok, #Reference<0.3646061956.1345847299.109215>}
 
       iex> move(game1, 3)
       Game state: :playing
@@ -41,15 +42,14 @@ defmodule TicTacToe do
   Concurrent games can be started and identied by its own game id.
 
       iex> {:ok, game2, _session} = new_game()
-      {:ok, #Reference<0.3646061956.1345847299.109312>,
-       Game state: :playing
-       Player: :crosses
+      Game state: :playing
+      Player: :crosses
 
-       _ | _ | _
-       _ | _ | _
-       _ | _ | _
+      _ | _ | _
+      _ | _ | _
+      _ | _ | _
 
-      }
+      {:ok, #Reference<0.3646061956.1345847299.109312>,}
 
       iex> move(game2, 5)
       Game state: :playing
@@ -101,10 +101,10 @@ defmodule TicTacToe do
       {:ok, :ok}
 
   """
-  require Logger
   alias TicTacToe.Router
 
   @type game_id :: reference()
+  @type move_result :: TicTacToe.GameSession.t | {:invalid_move, reason :: term()}
 
   @doc """
   Start a new game via the TicTacToe.Router. {:ok, game_id, session} will be returned
@@ -113,16 +113,24 @@ defmodule TicTacToe do
   The game_id is the identifier of this game and shall be used in other functions in
   this module.
   """
-  @spec new_game() :: {:ok, game_id(), TicTacToe.GameSession.t} | {:error, term()}
+  @spec new_game() :: {:ok, game_id()} | {:error, term()}
   def new_game() do
-    case TicTacToe.Router.new_worker() do
+    case Router.new_worker() do
       {:ok, game} ->
-        Logger.info("New game created: #{inspect(game)}")
-        {:ok, session} = Router.route_to(game, :get_game_state)
-        {:ok, game, session}
+        game_session(game) |> IO.inspect
+        {:ok, game}
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  @doc """
+  Retrieve's current game's session data.
+  """
+  @spec game_session(game_id) :: {:ok, TicTacToe.GameSession.t} | {:error, term()}
+  def game_session(game) do
+    {:ok, session} = Router.route_to(game, :get_game_session)
+    session
   end
 
   @doc """
@@ -131,16 +139,28 @@ defmodule TicTacToe do
   A valid input should be an integer in range 1 .. 9,
   and it should be a move that has not been played in this game session before.
 
-  If the input is invalid, then the current game session data is returned without
-  any updates.
+  If the input is invalid, an error message will be printed and
+  then the current game session data will be returned.
 
   If the input is valid, the updated game session data will be returned.
 
   {:error, reason} will be returned if the operation fails.
   """
-  @spec move(game_id(), input :: integer()) :: TicTacToe.GameSession.t | {:error, term()}
+  @spec move(game_id(), input :: integer()) :: {:ok, move_result()} | {:error, term()}
   def move(game, n) do
     case Router.route_to(game, {:move, [n]}) do
+      {:ok, {:invalid_move, :move_in_non_playing_state}} ->
+        display_error(["The game session has finished.\n",
+                      "To continue, please use TicTacToe.restart/1 to start a new game.\n",
+                      "To quit, please use TicTacToe.quit/1.\n"])
+        game_session(game)
+      {:ok, {:invalid_move, :integer_in_1_to_9}} ->
+        display_error(["Invalid move!\n",
+                      "Please enter an integer between 1 and 9 as your move.\n"])
+        game_session(game)
+      {:ok, {:invalid_move, :move_to_occupied_square}} ->
+        display_error("Square #{n} has been occupied, please make another move.\n")
+        game_session(game)
       {:ok, session} ->
         session
       {:error, reason} ->
@@ -154,12 +174,9 @@ defmodule TicTacToe do
   If the game has finished (either a draw or won by one party), then calling this function
   will clear the game session data, and return a new one.
 
-  If the game is still in the "playing" state, then the game will not be restarted,
-  and the current game session data is returned.
-
   {:error, reason} will be returned if the operation fails.
   """
-  @spec restart(game_id()) :: TicTacToe.GameSession.t | {:error, term()}
+  @spec restart(game_id()) :: {:ok, TicTacToe.GameSession.t} | {:error, term()}
   def restart(game) do
     case Router.route_to(game, :reset) do
       {:ok, session} ->
@@ -179,5 +196,9 @@ defmodule TicTacToe do
   @spec quit(game_id()) :: {:ok, term()} | {:error, term()}
   def quit(game) do
     Router.route_to(game, :stop)
+  end
+
+  defp display_error(msg) do
+    IO.ANSI.format([:white_background, :red, msg]) |> IO.puts
   end
 end
