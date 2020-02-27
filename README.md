@@ -1,4 +1,4 @@
-# Elixir challenge solution
+# Tic-Tac-Toe Gmae server
 
 ## Documentation
 
@@ -16,16 +16,11 @@ To run the tests, please used
 mix test --no-start
 ```
 
-# Elixir challenge
+## Background
 
-This repository holds the spec of the recruiting challenge for Elixir developers
-at Impraise.
+This is a challenge assignment I wrote during the recruitment process of a company I applied.
 
-## How to apply
-
-1. fork the repository
-2. write your code
-3. let us know when you're done!
+Below are some of the original requirments that came with the challenge.
 
 ### What we're paying attention to
 
