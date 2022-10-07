@@ -2,11 +2,19 @@
 
 ## Documentation
 
-For how to use the API to play the game in elixir shell, please see documentation in
+For how to use the API to play the game in Elixir shell, please see documentation in
 module TicTacToe.
 
-For the explanation of the mechanism of handling concurrency and fault-tolerency, please
+For the explanation of the mechanism of handling concurrency and fault-tolerance, please
 see documentation in module TicTacToe.Router.
+
+Start with
+
+```
+$ iex -S mix
+
+(iex)1> h TicTacToe
+```
 
 ## Test
 
