@@ -1,7 +1,6 @@
 defmodule TicTacToe.Supervisor do
-  @moduledoc """
-  See TicTacToe.Router for information.
-  """
+  @moduledoc false
+
   use Supervisor
 
   @doc false
@@ -11,18 +10,13 @@ defmodule TicTacToe.Supervisor do
   end
 
   @impl true
-  def init(init_args) do
-    game_server_mod = Keyword.get(init_args, :game_server_mod, TicTacToe.GameServer)
-
+  def init(_init_args) do
     children = [
-      # Starts a worker by calling: TicTacToe.Worker.start_link(arg)
-      # {TicTacToe.Worker, arg}
-      {TicTacToe.Router, [worker_server_mod: game_server_mod]},
+      {Registry, [keys: :unique, name: Registry.Games]},
       {TicTacToe.GameServerSup, []}
     ]
 
     opts = [strategy: :rest_for_one]
     Supervisor.init(children, opts)
   end
-
 end

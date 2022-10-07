@@ -21,7 +21,7 @@ defmodule TicTacToe do
       iex> import TicTacToe
       TicTacToe
 
-      iex> {:ok, game1, _session} = new_game()
+      iex> {:ok, game1} = new_game(:a)
       Game state: :playing
       Player: :crosses
 
@@ -29,7 +29,7 @@ defmodule TicTacToe do
       _ | _ | _
       _ | _ | _
 
-      {:ok, #Reference<0.3646061956.1345847299.109215>}
+      {:ok, :a}
 
       iex> move(game1, 3)
       Game state: :playing
@@ -41,7 +41,7 @@ defmodule TicTacToe do
 
   Concurrent games can be started and identied by its own game id.
 
-      iex> {:ok, game2, _session} = new_game()
+      iex> {:ok, game2} = new_game(:b)
       Game state: :playing
       Player: :crosses
 
@@ -49,7 +49,7 @@ defmodule TicTacToe do
       _ | _ | _
       _ | _ | _
 
-      {:ok, #Reference<0.3646061956.1345847299.109312>,}
+      {:ok, :b}
 
       iex> move(game2, 5)
       Game state: :playing
@@ -63,9 +63,8 @@ defmodule TicTacToe do
   If a game server crashes, it will be automatically restarted, and its session data
   will be restored to the point before its crash.
 
-      iex> pid_for_game1 = :sys.get_state(TicTacToe.Router) |> Map.get(:routes) |> Map.get(game1)
-      iex> :erlang.exit(pid_for_game1, :crashed)
-      true
+      iex> Registry.dispatch(Registry.Games, :a, fn [{pid, _}] -> :erlang.exit(pid, :crash) end)
+      :ok
 
       ## game1 can be continued to play from the status before its crash.
       iex> move(game1, 7)
@@ -98,27 +97,28 @@ defmodule TicTacToe do
   To quit a game, use quit/1 to clean up and release the memory.
 
       iex> quit(game1)
-      {:ok, :ok}
-
+      :ok
   """
-  alias TicTacToe.Router
+  alias TicTacToe.{GameServerSup, GameServer}
 
-  @type game_id :: reference()
-  @type move_result :: TicTacToe.GameSession.t | {:invalid_move, reason :: term()}
+  @type game_id :: atom()
+  @type move_result :: TicTacToe.GameSession.t() | {:invalid_move, reason :: term()}
 
   @doc """
-  Start a new game via the TicTacToe.Router. {:ok, game_id, session} will be returned
-  on success; and {:error, reason} will be returned if it fails to start a new game.
+  Start a new game.
+  {:ok, game_id} will be returned on success; and {:error, reason} will be returned
+  if it fails to start a new game.
 
   The game_id is the identifier of this game and shall be used in other functions in
   this module.
   """
-  @spec new_game() :: {:ok, game_id()} | {:error, term()}
-  def new_game() do
-    case Router.new_worker() do
-      {:ok, game} ->
-        game_session(game) |> IO.inspect
-        {:ok, game}
+  @spec new_game(game_id()) :: {:ok, game_id()} | {:error, term()}
+  def new_game(name) do
+    case GameServerSup.start_game(name) do
+      {:ok, _pid} ->
+        game_session(name) |> IO.inspect()
+        {:ok, name}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -127,9 +127,9 @@ defmodule TicTacToe do
   @doc """
   Retrieve's current game's session data.
   """
-  @spec game_session(game_id) :: {:ok, TicTacToe.GameSession.t} | {:error, term()}
+  @spec game_session(game_id()) :: TicTacToe.GameSession.t()
   def game_session(game) do
-    {:ok, session} = Router.route_to(game, :get_game_session)
+    session = GameServer.get_game_session(game)
     session
   end
 
@@ -143,28 +143,33 @@ defmodule TicTacToe do
   then the current game session data will be returned.
 
   If the input is valid, the updated game session data will be returned.
-
-  {:error, reason} will be returned if the operation fails.
   """
   @spec move(game_id(), input :: integer()) :: {:ok, move_result()} | {:error, term()}
-  def move(game, n) do
-    case Router.route_to(game, {:move, [n]}) do
-      {:ok, {:invalid_move, :move_in_non_playing_state}} ->
-        display_error(["The game session has finished.\n",
-                       "To continue, please use TicTacToe.restart/1 to start a new game.\n",
-                       "To quit, please use TicTacToe.quit/1.\n"])
-        game_session(game)
-      {:ok, {:invalid_move, :not_integer_in_1_to_9}} ->
-        display_error(["Invalid move!\n",
-                       "Please enter an integer between 1 and 9 as your move.\n"])
-        game_session(game)
-      {:ok, {:invalid_move, :move_to_occupied_square}} ->
+  def move(name, n) do
+    case GameServer.move(name, n) do
+      {:invalid_move, :move_in_non_playing_state} ->
+        display_error([
+          "The game session has finished.\n",
+          "To continue, please use TicTacToe.restart/1 to start a new game.\n",
+          "To quit, please use TicTacToe.quit/1.\n"
+        ])
+
+        game_session(name)
+
+      {:invalid_move, :not_integer_in_1_to_9} ->
+        display_error([
+          "Invalid move!\n",
+          "Please enter an integer between 1 and 9 as your move.\n"
+        ])
+
+        game_session(name)
+
+      {:invalid_move, :move_to_occupied_square} ->
         display_error("Square #{n} has been occupied, please make another move.\n")
-        game_session(game)
-      {:ok, session} ->
+        game_session(name)
+
+      session ->
         session
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
@@ -176,14 +181,9 @@ defmodule TicTacToe do
 
   {:error, reason} will be returned if the operation fails.
   """
-  @spec restart(game_id()) :: {:ok, TicTacToe.GameSession.t} | {:error, term()}
-  def restart(game) do
-    case Router.route_to(game, :reset) do
-      {:ok, session} ->
-        session
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec restart(game_id()) :: TicTacToe.GameSession.t()
+  def restart(name) do
+    GameServer.reset(name)
   end
 
   @doc """
@@ -195,10 +195,10 @@ defmodule TicTacToe do
   """
   @spec quit(game_id()) :: {:ok, term()} | {:error, term()}
   def quit(game) do
-    Router.route_to(game, :stop)
+    GameServer.stop(game)
   end
 
   defp display_error(msg) do
-    IO.ANSI.format([:white_background, :red, msg]) |> IO.puts
+    IO.ANSI.format([:white_background, :red, msg]) |> IO.puts()
   end
 end
